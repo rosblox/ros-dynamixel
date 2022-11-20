@@ -3,7 +3,7 @@ FROM ros:humble-ros-core
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3-colcon-common-extensions \
-    ros-humble-dynamixel-sdk ros-humble-dynamixel-sdk-custom-interfaces \
+    ros-humble-dynamixel-sdk \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /colcon_ws/src
