@@ -1,25 +1,24 @@
 FROM ros:humble-ros-core
 
-RUN chmod 777 /tmp
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3-colcon-common-extensions \
     ros-humble-dynamixel-sdk \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /colcon_ws/src
-
-COPY DynamixelSDK/dynamixel_sdk_examples dynamixel_sdk_examples
-COPY DynamixelSDK/dynamixel_sdk_custom_interfaces dynamixel_sdk_custom_interfaces
+COPY ros_entrypoint.sh .
 
 WORKDIR /colcon_ws
 
-RUN . /opt/ros/${ROS_DISTRO}/setup.sh && colcon build --symlink-install
+COPY DynamixelSDK/dynamixel_sdk_examples src/dynamixel_sdk_examples
+COPY DynamixelSDK/dynamixel_sdk_custom_interfaces src/dynamixel_sdk_custom_interfaces
 
-WORKDIR /
+RUN . /opt/ros/${ROS_DISTRO}/setup.sh && \
+    colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release --event-handlers console_direct+
 
-COPY resources/ros_entrypoint.sh .
+ENV LAUNCH_COMMAND='ros2 run dynamixel_sdk_examples velocity_interface_node'
 
-RUN echo 'alias build="colcon build --cmake-args --symlink-install  --event-handlers console_direct+"' >> ~/.bashrc
-RUN echo 'alias run="ros2 run dynamixel_sdk_examples velocity_interface_node"' >> ~/.bashrc
+# Create build and run aliases
+RUN echo 'alias build="colcon build --symlink-install --event-handlers console_direct+ "' >> /etc/bash.bashrc && \
+    echo 'alias run="su - ros --whitelist-environment=\"ROS_DOMAIN_ID\" /run.sh"' >> /etc/bash.bashrc && \
+    echo "source /colcon_ws/install/setup.bash; echo UID: $UID; echo ROS_DOMAIN_ID: $ROS_DOMAIN_ID; $LAUNCH_COMMAND" >> /run.sh && chmod +x /run.sh
